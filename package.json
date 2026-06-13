@@ -1,0 +1,24 @@
+{
+  "name": "ai_documentation",
+  "private": true,
+  "version": "0.0.0",
+  "workspaces": ["apps/*", "packages/*"],
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "format": "prettier --write .",
+    "db:generate": "ts-node scripts/db-generate.ts",
+    "db:migrate": "ts-node scripts/db-migrate.ts",
+    "db:push": "cd packages/database && drizzle-kit push",
+    "db:studio": "cd packages/database && drizzle-kit studio",
+    "docker:up": "docker-compose -f docker/docker-compose.yml up -d",
+    "docker:down": "docker-compose -f docker/docker-compose.yml down"
+  },
+  "devDependencies": {
+    "turbo": "^1.10.0",
+    "prettier": "^2.8.0",
+    "ts-node": "^10.9.0",
+    "typescript": "^5.0.0"
+  }
+}

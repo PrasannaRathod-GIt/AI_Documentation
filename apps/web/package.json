@@ -1,0 +1,24 @@
+{
+  "name": "@ai-docs/web",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "next": "^15.0.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "typescript": "^5.0.0",
+    "tailwindcss": "^4.0.0",
+    "shadcn-ui": "^0.0.0",
+    "lucide-react": "^0.0.0",
+    "@radix-ui/react-slot": "^1.0.0",
+    "shiki": "^0.16.0",
+    "next-mdx-remote": "^4.0.0",
+    "mermaid": "^10.0.0"
+  }
+}

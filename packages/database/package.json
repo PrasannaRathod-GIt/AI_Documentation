@@ -1,0 +1,23 @@
+{
+  "name": "@ai-docs/database",
+  "version": "0.0.0",
+  "private": true,
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "generate": "drizzle-kit generate",
+    "migrate": "drizzle-kit migrate",
+    "studio": "drizzle-kit studio",
+    "build": "tsc"
+  },
+  "dependencies": {
+    "drizzle-orm": "^0.28.0",
+    "pg": "^8.11.0"
+  },
+  "devDependencies": {
+    "drizzle-kit": "^0.20.0",
+    "@types/node": "^20.0.0",
+    "@types/pg": "^8.11.0",
+    "typescript": "^5.0.0"
+  }
+}
