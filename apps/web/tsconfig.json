@@ -1,8 +1,9 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    "jsx": "react-jsx",
-    "baseUrl": "."
+    "jsx": "preserve",
+    "moduleResolution": "bundler",
+    "module": "esnext"
   },
   "include": ["src"]
 }

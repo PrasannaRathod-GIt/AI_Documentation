@@ -16,8 +16,8 @@ console.log('🚀 Running Drizzle migrations...');
 console.log(`Database dir: ${dbDir}`);
 
 try {
-  // Run drizzle-kit migrate from database package
-  execSync('drizzle-kit migrate', {
+  // Fix applied here: Added :pg to target your active Postgres Docker container
+  execSync('npx drizzle-kit push:pg', {
     cwd: dbDir,
     stdio: 'inherit',
   });
