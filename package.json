@@ -3,29 +3,30 @@
   "private": true,
   "version": "0.0.0",
   "workspaces": ["apps/*", "packages/*"],
-  "scripts": {
+"scripts": {
     "dev": "turbo run dev",
     "build": "turbo run build",
     "lint": "turbo run lint",
     "format": "prettier --write .",
     "db:generate": "tsx scripts/db-generate.ts",
     "db:migrate": "tsx scripts/db-migrate.ts",
-    "db:push": "cd packages/database && drizzle-kit push",
-    "db:studio": "cd packages/database && drizzle-kit studio",
+    "db:push": "cd packages/database && npx drizzle-kit push",
+    "db:studio": "cd packages/database && npx drizzle-kit studio",
     "docker:up": "docker-compose -f docker/docker-compose.yml up -d",
-    "docker:down": "docker-compose -f docker/docker-compose.yml down"
+    "docker:down": "docker-compose -f docker/docker-compose.yml down",
+    "seed": "tsx scripts/seed.ts"
   },
   "devDependencies": {
     "turbo": "^1.10.0",
     "prettier": "^2.8.0",
     "tsx": "^4.22.4",
     "typescript": "^5.0.0",
-    "@types/node": "^20.11.0"
+    "@types/node": "^20.11.0",
+    "drizzle-orm": "^0.45.2"
   },
   "overrides": {
     "lucide-react": "^0.475.0",
     "shadcn-ui": "0.9.5",
-    "shiki": "^0.14.0",
-    "drizzle-orm": "^0.29.5"
+    "shiki": "^0.14.0"
   }
 }

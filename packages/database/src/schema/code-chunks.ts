@@ -1,24 +1,32 @@
 import {
-  pgTable,
-  varchar,
-  text,
-  integer,
-  timestamp,
-  index,
-  foreignKey,
   customType,
+  index,
+  integer,
+  pgTable,
+  text,
+  timestamp,
+  varchar,
 } from 'drizzle-orm/pg-core';
-import { sql } from 'drizzle-orm';
 import { organizations } from './organizations';
 import { repositories } from './repositories';
 
-// Custom pgvector type for Drizzle
-const vector = customType<{ data: number[] }>({
+const vector768 = customType<{
+  data: number[];
+  driverData: string;
+}>({
   dataType() {
     return 'vector(768)';
   },
-  toDriver(value) {
-    return value;
+  toDriver(value: number[]) {
+    return `[${value.join(',')}]`;
+  },
+  fromDriver(value: string | number[]) {
+    if (Array.isArray(value)) return value;
+
+    const cleaned = value.trim().replace(/^\[/, '').replace(/\]$/, '');
+    if (!cleaned) return [];
+
+    return cleaned.split(',').map((part) => Number(part.trim()));
   },
 });
 
@@ -27,9 +35,16 @@ export const codeChunks = pgTable(
   {
     id: varchar('id', { length: 36 })
       .primaryKey()
-      .default(sql`gen_random_uuid()::text`),
-    organizationId: varchar('organization_id', { length: 36 }).notNull(),
-    repositoryId: varchar('repository_id', { length: 36 }).notNull(),
+      .default('gen_random_uuid()'),
+
+    organizationId: varchar('organization_id', { length: 36 })
+      .notNull()
+      .references(() => organizations.id, { onDelete: 'cascade' }),
+
+    repositoryId: varchar('repository_id', { length: 36 })
+      .notNull()
+      .references(() => repositories.id, { onDelete: 'cascade' }),
+
     filePath: varchar('file_path', { length: 500 }).notNull(),
     symbolName: varchar('symbol_name', { length: 255 }).notNull(),
     language: varchar('language', { length: 50 }).notNull(),
@@ -37,36 +52,21 @@ export const codeChunks = pgTable(
     endLine: integer('end_line').notNull(),
     rawCode: text('raw_code').notNull(),
     summary: text('summary'),
-    embedding: vector('embedding'),
+    embedding: vector768('embedding').notNull(),
     contentHash: varchar('content_hash', { length: 64 }).notNull().unique(),
     createdAt: timestamp('created_at', { withTimezone: true })
       .notNull()
-      .default(sql`now()`),
+      .defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true })
       .notNull()
-      .default(sql`now()`),
+      .defaultNow(),
   },
   (table) => ({
-    orgIdIdx: index('code_chunks_org_id_idx').on(table.organizationId),
-    repoIdIdx: index('code_chunks_repo_id_idx').on(table.repositoryId),
-    symbolIdx: index('code_chunks_symbol_name_idx').on(table.symbolName),
+    organizationIdIdx: index('code_chunks_org_id_idx').on(table.organizationId),
+    repositoryIdIdx: index('code_chunks_repo_id_idx').on(table.repositoryId),
+    symbolNameIdx: index('code_chunks_symbol_name_idx').on(table.symbolName),
     contentHashIdx: index('code_chunks_content_hash_idx').on(table.contentHash),
-    // Vector index with HNSW using cosine distance
-    embeddingHnswIdx: index('code_chunks_embedding_hnsw_idx', {
-      type: 'hnsw',
-      opclass: 'vector_cosine_ops',
-    }).on(table.embedding),
-    orgIdFk: foreignKey({
-      columns: [table.organizationId],
-      foreignColumns: [organizations.id],
-      name: 'code_chunks_org_id_fk',
-    }).onDelete('cascade'),
-    repoIdFk: foreignKey({
-      columns: [table.repositoryId],
-      foreignColumns: [repositories.id],
-      name: 'code_chunks_repo_id_fk',
-    }).onDelete('cascade'),
-  })
+  }),
 );
 
 export type CodeChunk = typeof codeChunks.$inferSelect;
