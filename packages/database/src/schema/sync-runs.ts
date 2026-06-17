@@ -20,14 +20,19 @@ export const syncRuns = pgTable(
     branch: varchar('branch', { length: 255 }).notNull(),
     status: varchar('status', { length: 50 }).notNull().default('pending'), // 'pending', 'running', 'completed', 'failed'
     triggerType: varchar('trigger_type', { length: 50 }).notNull(), // 'webhook', 'manual', 'scheduled'
+    deliveryId: varchar('delivery_id', { length: 255 }), // GitHub delivery ID for idempotency
     errorMessage: text('error_message'),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .notNull()
+      .default(sql`now()`),
     startedAt: timestamp('started_at', { withTimezone: true }),
     finishedAt: timestamp('finished_at', { withTimezone: true }),
   },
   (table) => ({
     repoIdIdx: index('sync_runs_repo_id_idx').on(table.repositoryId),
     statusIdx: index('sync_runs_status_idx').on(table.status),
-    startedAtIdx: index('sync_runs_started_at_idx').on(table.startedAt),
+    deliveryIdIdx: index('sync_runs_delivery_id_idx').on(table.deliveryId),
+    createdAtIdx: index('sync_runs_created_at_idx').on(table.createdAt),
     repoIdFk: foreignKey({
       columns: [table.repositoryId],
       foreignColumns: [repositories.id],

@@ -1,7 +1,8 @@
 import {Module} from '@nestjs/common';
+import {GitHubModule} from './github/github.module';
 
 @Module({
-  imports: [],
+  imports: [GitHubModule],
   controllers: [],
   providers: []
 })
