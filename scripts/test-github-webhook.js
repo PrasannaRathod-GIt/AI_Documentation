@@ -5,16 +5,19 @@ const secret = "ai-docs-local-secret-123";
 
 const payload = JSON.stringify({
   ref: "refs/heads/main",
+  after: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  head_commit: {
+    id: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+  },
   repository: {
-    id: 12345,
-    name: "test-repository",
-    full_name: "test-user/test-repository",
+    id: 123456789,
+    name: "ai-docs",
+    full_name: "acme-corp/ai-docs",
   },
   sender: {
     login: "test-user"
   }
 });
-
 const signature =
   "sha256=" +
   crypto
