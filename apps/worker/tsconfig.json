@@ -2,9 +2,13 @@
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "outDir": "dist",
-    "rootDir": "src",
+    "rootDir": "../../",
     "moduleResolution": "NodeNext",
-    "module": "NodeNext"
+    "module": "NodeNext",
+    "baseUrl": "../../",
+    "paths": {
+      "@ai-docs/code-parser": ["packages/code-parser/src/index.ts"]
+    }
   },
-  "include": ["src"]
+  "include": ["src", "../../packages/code-parser/src"]
 }
