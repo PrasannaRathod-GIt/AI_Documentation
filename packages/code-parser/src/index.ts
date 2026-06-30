@@ -1,1 +1,1 @@
-export * from './extractStructure';
+export * from './extractStructure.js';

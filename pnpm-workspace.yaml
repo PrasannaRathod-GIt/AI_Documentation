@@ -1,2 +1,9 @@
-allowBuilds:
-  esbuild: set this to true or false
+packages:
+  - "apps/*"
+  - "packages/*"
+
+onlyBuiltDependencies:
+  - "@nestjs/core"
+  - esbuild
+  - msgpackr-extract
+  - sharp
