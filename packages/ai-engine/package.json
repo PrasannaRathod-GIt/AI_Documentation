@@ -1,5 +1,26 @@
 {
   "name": "@ai-docs/ai-engine",
   "version": "0.0.0",
-  "private": true
+  "private": true,
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "test": "node --loader ts-node/esm src/test.ts"
+  },
+  "dependencies": {
+    "@google/generative-ai": "^0.24.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "ts-node": "^10.9.0",
+    "typescript": "^5.0.0"
+  }
 }
