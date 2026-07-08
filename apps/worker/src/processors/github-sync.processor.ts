@@ -2,7 +2,12 @@ import { Injectable, Logger } from '@nestjs/common';
 import { Job, Worker } from 'bullmq';
 import { Octokit } from '@octokit/rest';
 import { createAppAuth } from '@octokit/auth-app';
+import { eq } from 'drizzle-orm';
+import { createHash } from 'crypto';
 import { extractStructure } from '@ai-docs/code-parser';
+import { db, codeChunks, repositories } from '@ai-docs/database';
+import { AIEngineService, EmbeddingService } from '@ai-docs/ai-engine';
+import type { ParsedSymbol } from '@ai-docs/ai-engine';
 
 export interface GitHubSyncJobPayload {
   provider: 'github';
@@ -29,7 +34,7 @@ interface ProcessedFile {
   filePath: string;
   language: string;
   symbols: Array<{
-    type: string;
+    type: ParsedSymbol['kind'];
     name: string;
     signature: string;
     startLine: number;
@@ -73,10 +78,29 @@ export class GitHubSyncProcessor {
   }
 
   async processJob(job: Job<GitHubSyncJobPayload>): Promise<ProcessedFile[]> {
-    const { repositoryFullName, installationId, commitSha, branch, deliveryId } = job.data;
+    const { repositoryFullName, installationId, commitSha, branch, deliveryId, repositoryId } = job.data;
     this.logger.log(
       `Processing sync job for ${repositoryFullName} branch=${branch} sha=${commitSha} deliveryId=${deliveryId}`
     );
+
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+      throw new Error('GEMINI_API_KEY is not configured');
+    }
+
+    const aiEngine = new AIEngineService(apiKey);
+    const embeddingService = new EmbeddingService(apiKey);
+
+    let repositoryRecord = null;
+    if (repositoryId) {
+      repositoryRecord = await db.query.repositories.findFirst({
+        where: eq(repositories.id, repositoryId),
+      });
+    }
+
+    if (!repositoryRecord) {
+      throw new Error('Repository record not found for sync job');
+    }
 
     try {
       const octokit = await this.createOctokit(installationId);
@@ -119,6 +143,89 @@ export class GitHubSyncProcessor {
         }
 
         const structure = extractStructure(content, filePath);
+        const fileLines = content.split(/\r?\n/);
+
+        for (const symbol of structure.symbols) {
+          const rawCode = fileLines.slice(symbol.startLine - 1, symbol.endLine).join('\n');
+          const parsedSymbol: ParsedSymbol = {
+            name: symbol.name,
+            kind: symbol.type as ParsedSymbol['kind'],
+            startLine: symbol.startLine,
+            endLine: symbol.endLine,
+            filePath,
+            code: rawCode,
+          };
+
+          let documentationResult = null;
+          try {
+            documentationResult = await aiEngine.documentSymbol(parsedSymbol, content);
+          } catch (error) {
+            const message = error instanceof Error ? error.message : 'Unknown documentation error';
+            this.logger.error(`Documentation generation failed for ${symbol.name} in ${filePath}: ${message}`);
+            continue;
+          }
+
+          let embeddingVector: number[];
+          try {
+            embeddingVector = await embeddingService.generateDocumentationEmbedding(documentationResult);
+          } catch (error) {
+            const message = error instanceof Error ? error.message : 'Unknown embedding error';
+            this.logger.error(`Embedding generation failed for ${symbol.name} in ${filePath}: ${message}`);
+            continue;
+          }
+
+          const contentHash = createHash('sha256').update(rawCode).digest('hex');
+          const summary = documentationResult.markdown.split(/\r?\n/).find((line) => line.trim()) ?? null;
+
+          try {
+            const existingChunk = await db.query.codeChunks.findFirst({
+              where: eq(codeChunks.contentHash, contentHash),
+            });
+
+            if (existingChunk) {
+              await db.update(codeChunks)
+                .set({
+                  organizationId: repositoryRecord.organizationId,
+                  repositoryId: repositoryRecord.id,
+                  filePath,
+                  symbolName: symbol.name,
+                  language: structure.language,
+                  startLine: symbol.startLine,
+                  endLine: symbol.endLine,
+                  rawCode,
+                  summary,
+                  markdown: documentationResult.markdown,
+                  mermaidDiagram: documentationResult.mermaidDiagram ?? null,
+                  embedding: embeddingVector,
+                  updatedAt: new Date(),
+                })
+                .where(eq(codeChunks.id, existingChunk.id));
+            } else {
+              await db.insert(codeChunks).values({
+                organizationId: repositoryRecord.organizationId,
+                repositoryId: repositoryRecord.id,
+                filePath,
+                symbolName: symbol.name,
+                language: structure.language,
+                startLine: symbol.startLine,
+                endLine: symbol.endLine,
+                rawCode,
+                summary,
+                markdown: documentationResult.markdown,
+                mermaidDiagram: documentationResult.mermaidDiagram ?? null,
+                embedding: embeddingVector,
+                contentHash,
+              });
+            }
+
+            this.logger.log(`✅ Synced symbol ${symbol.name} from ${filePath}`);
+          } catch (error) {
+            const message = error instanceof Error ? error.message : 'Unknown database error';
+            this.logger.error(`Failed to store chunk for ${symbol.name} in ${filePath}: ${message}`);
+            continue;
+          }
+        }
+
         processedFiles.push({
           filePath,
           language: structure.language,

@@ -15,9 +15,8 @@
     "db:migrate": "tsx scripts/db-migrate.ts",
     "db:push": "cd packages/database && npx drizzle-kit push",
     "db:studio": "cd packages/database && npx drizzle-kit studio",
-    "docker:up": "docker-compose -f docker/docker-compose.yml up -d",
-    "docker:down": "docker-compose -f docker/docker-compose.yml down",
-    "seed": "tsx scripts/seed.ts"
+    "seed": "tsx scripts/seed.ts",
+    "seed:phase5": "tsx scripts/seed-phase5.ts"
   },
   "devDependencies": {
     "turbo": "^1.10.0",

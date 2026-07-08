@@ -15,6 +15,21 @@ export interface DocumentationResult {
   tokensUsed: number;
 }
 
+export interface SearchableChunk {
+  id: string;
+  symbolName: string;
+  filePath: string;
+  summary: string | null;
+  rawCode: string;
+  similarityScore: number;
+}
+
+export interface EmbeddingResult {
+  vector: number[];
+  dimensions: number;
+  inputLength: number;
+}
+
 export interface AIProvider {
   generateDocumentation(symbol: ParsedSymbol, fileContext: string): Promise<DocumentationResult>;
 }

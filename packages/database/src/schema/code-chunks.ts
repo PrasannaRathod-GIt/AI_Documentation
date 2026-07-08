@@ -52,6 +52,8 @@ export const codeChunks = pgTable(
     endLine: integer('end_line').notNull(),
     rawCode: text('raw_code').notNull(),
     summary: text('summary'),
+    markdown: text('markdown'),
+    mermaidDiagram: text('mermaid_diagram'),
     embedding: vector768('embedding').notNull(),
     contentHash: varchar('content_hash', { length: 64 }).notNull().unique(),
     createdAt: timestamp('created_at', { withTimezone: true })
@@ -66,6 +68,9 @@ export const codeChunks = pgTable(
     repositoryIdIdx: index('code_chunks_repo_id_idx').on(table.repositoryId),
     symbolNameIdx: index('code_chunks_symbol_name_idx').on(table.symbolName),
     contentHashIdx: index('code_chunks_content_hash_idx').on(table.contentHash),
+    // Run: pnpm --filter @ai-docs/database generate then migrate
+    embeddingHnswIdx: index('code_chunks_embedding_hnsw_idx')
+      .using('hnsw', table.embedding.op('vector_cosine_ops')),
   }),
 );
 
