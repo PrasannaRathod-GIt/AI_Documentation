@@ -15,6 +15,20 @@
       "when": 1781640160503,
       "tag": "0001_glamorous_tana_nile",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1783625485211,
+      "tag": "0002_many_the_captain",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1783707960534,
+      "tag": "0003_petite_dexter_bennett",
+      "breakpoints": true
     }
   ]
 }
