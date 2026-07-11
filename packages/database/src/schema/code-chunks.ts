@@ -10,12 +10,12 @@ import {
 import { organizations } from './organizations';
 import { repositories } from './repositories';
 
-const vector3072 = customType<{
+const vector768 = customType<{
   data: number[];
   driverData: string;
 }>({
   dataType() {
-    return 'vector(3072)';
+    return 'vector(768)';
   },
 
   toDriver(value: number[]) {
@@ -70,7 +70,7 @@ export const codeChunks = pgTable(
 
     mermaidDiagram: text('mermaid_diagram'),
 
-    embedding: vector3072('embedding').notNull(),
+    embedding: vector768('embedding').notNull(),
 
     contentHash: varchar('content_hash', { length: 64 })
       .notNull()

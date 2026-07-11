@@ -15,17 +15,16 @@ async function delay(ms: number): Promise<void> {
 
 async function seed(): Promise<void> {
   const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) {
-    throw new Error('GEMINI_API_KEY is not configured');
-  }
+  if (!apiKey) throw new Error('GEMINI_API_KEY is not configured');
 
   const embeddingService = new EmbeddingService(apiKey);
 
   console.log('🌱 Starting Phase 5 seed process...');
 
+  // --- Organization ---
   console.log('📦 Ensuring organization exists...');
   let organization = await db.query.organizations.findFirst({
-    where: organizations.slug.eq('acme-corp'),
+    where: eq(organizations.slug, 'acme-corp'),
   });
 
   if (!organization) {
@@ -36,15 +35,13 @@ async function seed(): Promise<void> {
     organization = rows[0] ?? null;
   }
 
-  if (!organization) {
-    throw new Error('Failed to create or find organization');
-  }
+  if (!organization) throw new Error('Failed to create or find organization');
+  console.log(`✅ Organization: ${organization.name} (${organization.id})`);
 
-  console.log(`✅ Organization ready: ${organization.name} (${organization.id})`);
-
+  // --- Repository ---
   console.log('📚 Ensuring repository exists...');
   let repository = await db.query.repositories.findFirst({
-    where: repositories.fullName.eq('acme-corp/ai-docs'),
+    where: eq(repositories.fullName, 'acme-corp/ai-docs'),
   });
 
   if (!repository) {
@@ -59,49 +56,23 @@ async function seed(): Promise<void> {
     repository = rows[0] ?? null;
   }
 
-  if (!repository) {
-    throw new Error('Failed to create or find repository');
-  }
+  if (!repository) throw new Error('Failed to create or find repository');
+  console.log(`✅ Repository: ${repository.fullName} (${repository.id})`);
 
-  console.log(`✅ Repository ready: ${repository.fullName} (${repository.id})`);
-
-  const docs: Array<{ result: DocumentationResult; filePath: string; language: string }> = [
+  // --- Seed Data ---
+  const docs: Array<{
+    result: DocumentationResult;
+    filePath: string;
+    language: string;
+  }> = [
     {
       filePath: 'src/auth/auth.service.ts',
       language: 'typescript',
       result: {
         symbolName: 'verifyJwtToken',
         filePath: 'src/auth/auth.service.ts',
-        markdown: `## Overview
-
-Verifies a JSON Web Token (JWT) and returns the authenticated user payload.
-
-## Parameters
-
-| Name | Type | Description |
-| --- | --- | --- |
-| token | string | The JWT token to verify. |
-
-## Returns
-
-- `type` Authenticated user payload or null if verification fails.
-
-## Example Usage
-
-\`\`\`ts
-const payload = await verifyJwtToken(token);
-if (!payload) {
-  throw new Error('Unauthorized');
-}
-\`\`\`
-
-## Notes
-
-Uses the application's JWT secret and supports token expiration checks.
-`,
-        mermaidDiagram: 'graph TD
-  Token -->|verify| JWT[JWT Payload]
-  JWT -->|return| App[Application]',
+        markdown: '## Overview\n\nVerifies a JSON Web Token (JWT) and returns the authenticated user payload.\n\n## Parameters\n\n| Name | Type | Description |\n| --- | --- | --- |\n| token | string | The JWT token to verify. |\n\n## Returns\n\nAuthenticated user payload or null if verification fails.\n\n## Example Usage\n\n```ts\nconst payload = await verifyJwtToken(token);\nif (!payload) {\n  throw new Error("Unauthorized");\n}\n```\n\n## Notes\n\nUses the application JWT secret and supports token expiration checks.',
+        mermaidDiagram: 'graph TD\n  Token -->|verify| JWT[JWT Payload]\n  JWT -->|return| App[Application]',
         tokensUsed: 0,
       },
     },
@@ -111,39 +82,8 @@ Uses the application's JWT secret and supports token expiration checks.
       result: {
         symbolName: 'processCharge',
         filePath: 'src/payments/payment.service.ts',
-        markdown: `## Overview
-
-Processes a customer payment by charging a payment provider and managing refund logic.
-
-## Parameters
-
-| Name | Type | Description |
-| --- | --- | --- |
-| paymentMethod | string | The payment provider method, such as 'stripe' or 'paypal'. |
-| amount | number | The amount to charge in cents. |
-| currency | string | The currency code, for example 'USD'. |
-
-## Returns
-
-- `type` A result object indicating success, transaction id, or failure reason.
-
-## Example Usage
-
-\\`\`\`ts
-const result = await processCharge('stripe', 2500, 'USD');
-if (!result.success) {
-  console.error(result.reason);
-}
-\`\`\`
-
-## Notes
-
-Handles both charge and refund scenarios and logs all payment events securely.
-`,
-        mermaidDiagram: 'graph TD
-  Request --> Charge[Charge Provider]
-  Charge --> Response[Payment Result]
-  Response -->|success| Order[Order Update]',
+        markdown: '## Overview\n\nProcesses a customer payment by charging a payment provider.\n\n## Parameters\n\n| Name | Type | Description |\n| --- | --- | --- |\n| paymentMethod | string | The payment provider such as stripe or paypal. |\n| amount | number | The amount to charge in cents. |\n| currency | string | The currency code for example USD. |\n\n## Returns\n\nA result object indicating success, transaction id, or failure reason.\n\n## Example Usage\n\n```ts\nconst result = await processCharge("stripe", 2500, "USD");\nif (!result.success) {\n  console.error(result.reason);\n}\n```\n\n## Notes\n\nHandles both charge and refund scenarios and logs all payment events securely.',
+        mermaidDiagram: 'graph TD\n  Request --> Charge[Charge Provider]\n  Charge --> Response[Payment Result]\n  Response -->|success| Order[Order Update]',
         tokensUsed: 0,
       },
     },
@@ -153,34 +93,8 @@ Handles both charge and refund scenarios and logs all payment events securely.
       result: {
         symbolName: 'createDatabasePool',
         filePath: 'src/database/db.ts',
-        markdown: `## Overview
-
-Initializes a PostgreSQL connection pool and returns a database client instance.
-
-## Parameters
-
-| Name | Type | Description |
-| --- | --- | --- |
-| config | object | Pool configuration settings such as connection string and max clients. |
-
-## Returns
-
-- `type` A connected PG pool that can be used for query execution.
-
-## Example Usage
-
-\\`\`\`ts
-const pool = createDatabasePool({ connectionString });
-const client = await pool.connect();
-\`\`\`
-
-## Notes
-
-The pool reuses connections and provides safe resource cleanup.
-`,
-        mermaidDiagram: 'graph TD
-  App -->|connect| Pool[Connection Pool]
-  Pool -->|query| DB[PostgreSQL Database]',
+        markdown: '## Overview\n\nInitializes a PostgreSQL connection pool and returns a database client instance.\n\n## Parameters\n\n| Name | Type | Description |\n| --- | --- | --- |\n| config | object | Pool configuration settings such as connection string and max clients. |\n\n## Returns\n\nA connected PG pool that can be used for query execution.\n\n## Example Usage\n\n```ts\nconst pool = createDatabasePool({ connectionString });\nconst client = await pool.connect();\n```\n\n## Notes\n\nThe pool reuses connections and provides safe resource cleanup.',
+        mermaidDiagram: 'graph TD\n  App -->|connect| Pool[Connection Pool]\n  Pool -->|query| DB[PostgreSQL Database]',
         tokensUsed: 0,
       },
     },
@@ -190,36 +104,8 @@ The pool reuses connections and provides safe resource cleanup.
       result: {
         symbolName: 'sendNotificationEmail',
         filePath: 'src/email/email.service.ts',
-        markdown: `## Overview
-
-Sends a notification email to a user using the configured SMTP or email provider.
-
-## Parameters
-
-| Name | Type | Description |
-| --- | --- | --- |
-| recipient | string | Recipient email address. |
-| subject | string | Email subject line. |
-| body | string | The markdown or HTML body of the email. |
-
-## Returns
-
-- `type` A promise that resolves when the email has been queued or delivered.
-
-## Example Usage
-
-\\`\`\`ts
-await sendNotificationEmail('user@example.com', 'Welcome', 'Hello and welcome!');
-\`\`\`
-
-## Notes
-
-Implements retries for transient provider failures and supports templated content.
-`,
-        mermaidDiagram: 'graph TD
-  User -->|send| EmailService[Email Service]
-  EmailService --> Provider[Email Provider]
-  Provider -->|deliver| Inbox[User Inbox]',
+        markdown: '## Overview\n\nSends a notification email to a user using the configured SMTP or email provider.\n\n## Parameters\n\n| Name | Type | Description |\n| --- | --- | --- |\n| recipient | string | Recipient email address. |\n| subject | string | Email subject line. |\n| body | string | The markdown or HTML body of the email. |\n\n## Returns\n\nA promise that resolves when the email has been queued or delivered.\n\n## Example Usage\n\n```ts\nawait sendNotificationEmail("user@example.com", "Welcome", "Hello and welcome!");\n```\n\n## Notes\n\nImplements retries for transient provider failures and supports templated content.',
+        mermaidDiagram: 'graph TD\n  User -->|send| EmailService[Email Service]\n  EmailService --> Provider[Email Provider]\n  Provider -->|deliver| Inbox[User Inbox]',
         tokensUsed: 0,
       },
     },
@@ -229,51 +115,27 @@ Implements retries for transient provider failures and supports templated conten
       result: {
         symbolName: 'uploadFileToS3',
         filePath: 'src/storage/upload.service.ts',
-        markdown: `## Overview
-
-Uploads a file stream to S3-compatible storage and returns the public asset URL.
-
-## Parameters
-
-| Name | Type | Description |
-| --- | --- | --- |
-| fileBuffer | Buffer | The binary content to upload. |
-| destinationKey | string | The target path or key in storage. |
-| contentType | string | The MIME type of the file. |
-
-## Returns
-
-- `type` A result containing the uploaded object URL and metadata.
-
-## Example Usage
-
-\\`\`\`ts
-const result = await uploadFileToS3(buffer, 'uploads/photo.png', 'image/png');
-console.log(result.url);
-\`\`\`
-
-## Notes
-
-Applies content-type metadata and uses presigned uploads when available.
-`,
-        mermaidDiagram: 'graph TD
-  File -->|upload| S3[S3 Storage]
-  S3 -->|return| URL[Asset URL]',
+        markdown: '## Overview\n\nUploads a file stream to S3-compatible storage and returns the public asset URL.\n\n## Parameters\n\n| Name | Type | Description |\n| --- | --- | --- |\n| fileBuffer | Buffer | The binary content to upload. |\n| destinationKey | string | The target path or key in storage. |\n| contentType | string | The MIME type of the file. |\n\n## Returns\n\nA result containing the uploaded object URL and metadata.\n\n## Example Usage\n\n```ts\nconst result = await uploadFileToS3(buffer, "uploads/photo.png", "image/png");\nconsole.log(result.url);\n```\n\n## Notes\n\nApplies content-type metadata and uses presigned uploads when available.',
+        mermaidDiagram: 'graph TD\n  File -->|upload| S3[S3 Storage]\n  S3 -->|return| URL[Asset URL]',
         tokensUsed: 0,
       },
     },
   ];
 
+  // --- Process Each Chunk ---
   for (const item of docs) {
-    console.log(`\n✨ Processing seed chunk: ${item.result.symbolName}`);
-    const contentHash = generateContentHash(item.result.symbolName + item.result.filePath + item.result.markdown);
+    console.log(`\n✨ Processing: ${item.result.symbolName}`);
+
+    const contentHash = generateContentHash(
+      item.result.symbolName + item.result.filePath + item.result.markdown,
+    );
 
     const existing = await db.query.codeChunks.findFirst({
-      where: codeChunks.contentHash.eq(contentHash),
+      where: eq(codeChunks.contentHash, contentHash),
     });
 
     if (existing) {
-      console.log(`⚠️ Chunk already exists for ${item.result.symbolName}, skipping embedding generation.`);
+      console.log(`⚠️  Already exists: ${item.result.symbolName}, skipping.`);
       continue;
     }
 
@@ -288,27 +150,21 @@ Applies content-type metadata and uses presigned uploads when available.
       language: item.language,
       startLine: 1,
       endLine: 1,
-      rawCode: `// Documentation seed for ${item.result.symbolName}`,
-      summary: item.result.markdown.split(/\r?\n/).find((line) => line.trim()) ?? null,
-      markdown: item.result.markdown,
-      mermaidDiagram: item.result.mermaidDiagram ?? null,
+      rawCode: '// Documentation seed for ' + item.result.symbolName,
+      summary: item.result.markdown.split('\n').find((line) => line.trim() && !line.startsWith('#')) ?? null,
       embedding,
       contentHash,
     });
 
-    console.log(`✅ Inserted seed chunk ${item.result.symbolName}`);
+    console.log(`✅ Inserted: ${item.result.symbolName}`);
     await delay(1000);
   }
 
-  console.log('\n🎉 Phase 5 seed process complete.');
+  console.log('\n🎉 Phase 5 seed complete! 5 chunks inserted.');
+  await pool.end();
 }
 
-seed()
-  .catch((error) => {
-    console.error('❌ Seed phase 5 failed:', error);
-    process.exit(1);
-  })
-  .finally(async () => {
-    await pool.end();
-    console.log('🔌 Database connection closed');
-  });
+seed().catch((error) => {
+  console.error('❌ Seed failed:', error);
+  process.exit(1);
+});

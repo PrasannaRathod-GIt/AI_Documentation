@@ -17,7 +17,7 @@ interface SearchQueryParams {
   minScore?: string;
 }
 
-@Controller('api/search')
+@Controller('search')
 export class SearchController {
   constructor(private readonly searchService: SearchService) {}
 
