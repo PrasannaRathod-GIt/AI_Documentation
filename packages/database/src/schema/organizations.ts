@@ -9,6 +9,7 @@ export const organizations = pgTable(
       .default(sql`gen_random_uuid()::text`),
     name: varchar('name', { length: 255 }).notNull(),
     slug: varchar('slug', { length: 255 }).notNull().unique(),
+    clerkOrgId: varchar('clerk_org_id', { length: 255 }).unique(),
     createdAt: timestamp('created_at', { withTimezone: true })
       .notNull()
       .default(sql`now()`),
@@ -20,6 +21,9 @@ export const organizations = pgTable(
     slugIdx: index('organizations_slug_idx').on(table.slug),
   })
 );
+
+// Run: pnpm --filter @ai-docs/database generate
+// Run: pnpm --filter @ai-docs/database migrate
 
 export type Organization = typeof organizations.$inferSelect;
 export type NewOrganization = typeof organizations.$inferInsert;
