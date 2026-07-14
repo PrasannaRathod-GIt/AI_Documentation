@@ -1,53 +1,94 @@
 import Link from 'next/link';
 
-const features = [
-  {
-    title: 'Repository-aware docs',
-    description: 'Turn codebases into navigable documentation with structured summaries.',
-  },
-  {
-    title: 'Fast search',
-    description: 'Search across symbols, files, and generated docs from a single place.',
-  },
-  {
-    title: 'Live syncs',
-    description: 'Keep documentation current as repositories change through webhook-driven updates.',
-  },
-];
+async function getRepository(repoSlug: string) {
+  const base = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3333';
+  const url = `${base}/api/repositories?organizationId=00e479cc-ed6b-48ea-afc4-e22de9a8a0d3`;
+  console.log('🔍 Fetching repositories from:', url);
+  
+  try {
+    const response = await fetch(url, { cache: 'no-store' });
+    console.log('📡 Response status:', response.status);
+    if (!response.ok) {
+      console.log('❌ Response not ok:', await response.text());
+      return null;
+    }
+    const repos = await response.json();
+    console.log('📦 Repos received:', repos);
+    const found = repos.find((r: any) => r.fullName.includes(repoSlug));
+    console.log('🎯 Matched repo:', found);
+    return found || null;
+  } catch (error) {
+    console.log('💥 Fetch error:', error);
+    return null;
+  }
+}
 
-export default function Page() {
+async function getCodeChunks(repositoryId: string) {
+  const base = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3333';
+  const url = `${base}/api/code-chunks?repositoryId=${encodeURIComponent(repositoryId)}`;
+  console.log('🔍 Fetching code chunks from:', url);
+  
+  try {
+    const response = await fetch(url, { cache: 'no-store' });
+    console.log('📡 Chunks response status:', response.status);
+    if (!response.ok) return [];
+    const chunks = await response.json();
+    console.log('📦 Chunks received:', chunks.length);
+    return chunks;
+  } catch (error) {
+    console.log('💥 Chunks fetch error:', error);
+    return [];
+  }
+}
+
+export default async function DocsPage({ params }: { params: Promise<{ repo: string }> }) {
+  const { repo } = await params;
+  const repository = await getRepository(repo);
+  const codeChunks = repository ? await getCodeChunks(repository.id) : [];
+
   return (
-    <main className="min-h-screen bg-slate-950 text-slate-100">
-      <section className="mx-auto flex max-w-6xl flex-col gap-8 px-6 py-24">
-        <div className="max-w-3xl space-y-4">
-          <p className="text-sm font-semibold uppercase tracking-[0.3em] text-cyan-400">AI Documentation</p>
-          <h1 className="text-4xl font-semibold sm:text-6xl">Turn your codebase into a living documentation experience.</h1>
-          <p className="text-lg text-slate-300">
-            Explore repositories, inspect generated code chunks, and ship better docs with the same workflow your team already uses.
-          </p>
-          <div className="flex flex-wrap gap-3">
-            <Link href="/sign-up" className="rounded-full bg-cyan-500 px-5 py-3 font-medium text-slate-950 transition hover:bg-cyan-400">
-              Get Started
-            </Link>
-            <Link href="/docs/acme-corp" className="rounded-full border border-slate-700 px-5 py-3 font-medium text-slate-200 transition hover:border-cyan-400 hover:text-cyan-400">
-              View Demo
-            </Link>
+    <main className="min-h-screen bg-slate-950 p-8 text-slate-100">
+      <div className="mx-auto max-w-5xl space-y-6">
+
+        {/* TEMPORARY DEBUG BLOCK — remove after fixing */}
+        <div style={{ background: '#222', color: '#0f0', padding: '16px', fontFamily: 'monospace', fontSize: '12px', whiteSpace: 'pre-wrap' }}>
+          <div>repo slug: {repo}</div>
+          <div>API_URL env: {process.env.NEXT_PUBLIC_API_URL || 'NOT SET (using fallback)'}</div>
+          <div>repository found: {JSON.stringify(repository, null, 2)}</div>
+          <div>codeChunks count: {codeChunks.length}</div>
+        </div>
+        {/* END DEBUG BLOCK */}
+
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-sm uppercase tracking-[0.3em] text-cyan-400">Docs</p>
+            <h1 className="text-3xl font-semibold">{repo}</h1>
           </div>
+          <Link href="/dashboard" className="rounded-full border border-slate-700 px-4 py-2 text-sm hover:border-cyan-400">
+            Back to dashboard
+          </Link>
         </div>
-
-        <div className="grid gap-4 md:grid-cols-3">
-          {features.map((feature) => (
-            <div key={feature.title} className="rounded-2xl border border-slate-800 bg-slate-900/80 p-6 shadow-lg shadow-slate-950/40">
-              <h2 className="text-xl font-semibold">{feature.title}</h2>
-              <p className="mt-2 text-sm text-slate-400">{feature.description}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      <footer className="border-t border-slate-800 px-6 py-6 text-center text-sm text-slate-500">
-        AI Documentation — generated insights for every repository.
-      </footer>
+        {codeChunks.length === 0 ? (
+          <div className="rounded-2xl border border-dashed border-slate-700 bg-slate-900/70 p-10 text-center text-slate-400">
+            No code chunks available for this repository yet.
+          </div>
+        ) : (
+          <div className="space-y-6">
+            {codeChunks.map((chunk: any) => (
+              <article key={chunk.id} className="rounded-2xl border border-slate-800 bg-slate-900/70 p-6">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <h2 className="text-xl font-semibold">{chunk.symbolName}</h2>
+                  <div className="flex gap-2">
+                    <span className="rounded-full border border-slate-700 px-3 py-1 text-sm text-slate-300">{chunk.language}</span>
+                    <span className="rounded-full border border-slate-700 px-3 py-1 text-sm text-slate-300">{chunk.filePath}</span>
+                  </div>
+                </div>
+                <div className="mt-4 whitespace-pre-wrap text-sm text-slate-400">{chunk.markdown || chunk.summary || 'No markdown summary available.'}</div>
+              </article>
+            ))}
+          </div>
+        )}
+      </div>
     </main>
   );
 }

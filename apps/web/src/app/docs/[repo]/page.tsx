@@ -1,16 +1,27 @@
-import Link from 'next/link';
+﻿import Link from 'next/link';
+
+async function getRepository(repoSlug: string) {
+  const base = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3333';
+  const url = `${base}/api/repositories?organizationId=00e479cc-ed6b-48ea-afc4-e22de9a8a0d3`;
+
+  try {
+    const response = await fetch(url, { cache: 'no-store' });
+    if (!response.ok) return null;
+    const repos = await response.json();
+    const found = repos.find((r: any) => r.fullName.includes(repoSlug));
+    return found || null;
+  } catch {
+    return null;
+  }
+}
 
 async function getCodeChunks(repositoryId: string) {
+  const base = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3333';
+  const url = `${base}/api/code-chunks?repositoryId=${encodeURIComponent(repositoryId)}`;
+
   try {
-    const base = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3333';
-    const response = await fetch(`${base}/api/code-chunks?repositoryId=${encodeURIComponent(repositoryId)}`, {
-      cache: 'no-store',
-    });
-
-    if (!response.ok) {
-      return [];
-    }
-
+    const response = await fetch(url, { cache: 'no-store' });
+    if (!response.ok) return [];
     return response.json();
   } catch {
     return [];
@@ -19,7 +30,8 @@ async function getCodeChunks(repositoryId: string) {
 
 export default async function DocsPage({ params }: { params: Promise<{ repo: string }> }) {
   const { repo } = await params;
-  const codeChunks = await getCodeChunks(repo);
+  const repository = await getRepository(repo);
+  const codeChunks = repository ? await getCodeChunks(repository.id) : [];
 
   return (
     <main className="min-h-screen bg-slate-950 p-8 text-slate-100">
@@ -33,7 +45,6 @@ export default async function DocsPage({ params }: { params: Promise<{ repo: str
             Back to dashboard
           </Link>
         </div>
-
         {codeChunks.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-slate-700 bg-slate-900/70 p-10 text-center text-slate-400">
             No code chunks available for this repository yet.
