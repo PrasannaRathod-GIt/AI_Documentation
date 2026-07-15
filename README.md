@@ -7,3 +7,4 @@ Structure:
 - packages/: shared libraries, database, parsers, AI providers
 
 This repository contains only scaffolding and boilerplate files.
+- for developers
