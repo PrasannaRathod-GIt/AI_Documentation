@@ -29,7 +29,8 @@ async function getCodeChunks(repositoryId: string) {
 }
 
 export default async function DocsPage({ params }: { params: Promise<{ repo: string }> }) {
-  const { repo } = await params;
+  const { repo: rawRepo } = await params;
+  const repo = decodeURIComponent(rawRepo);
   const repository = await getRepository(repo);
   const codeChunks = repository ? await getCodeChunks(repository.id) : [];
 
@@ -69,3 +70,4 @@ export default async function DocsPage({ params }: { params: Promise<{ repo: str
     </main>
   );
 }
+

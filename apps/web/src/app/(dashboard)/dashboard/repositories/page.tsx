@@ -1,9 +1,9 @@
-import Link from 'next/link';
+﻿import Link from 'next/link';
 
 async function getRepositories() {
   try {
     const base = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3333';
-    const response = await fetch(`${base}/api/repositories?organizationId=placeholder`, {
+    const response = await fetch(`${base}/api/repositories?organizationId=00e479cc-ed6b-48ea-afc4-e22de9a8a0d3`, {
       cache: 'no-store',
     });
 
@@ -51,9 +51,9 @@ export default async function RepositoriesPage() {
                   <td className="px-4 py-3 font-medium">{repository.fullName}</td>
                   <td className="px-4 py-3">{repository.provider}</td>
                   <td className="px-4 py-3">{repository.defaultBranch}</td>
-                  <td className="px-4 py-3">{repository.lastSyncedCommitSha || '—'}</td>
+                  <td className="px-4 py-3">{repository.lastSyncedCommitSha || "—"}</td>
                   <td className="px-4 py-3">
-                    <Link href={`/docs/${repository.fullName}`} className="text-cyan-400 hover:underline">
+                    <Link href={`/docs/${encodeURIComponent(repository.fullName)}`} className="text-cyan-400 hover:underline">
                       View Docs
                     </Link>
                   </td>
@@ -66,3 +66,4 @@ export default async function RepositoriesPage() {
     </div>
   );
 }
+

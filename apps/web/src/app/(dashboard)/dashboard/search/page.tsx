@@ -65,10 +65,10 @@ export default function SearchPage() {
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div>
                 <h2 className="text-lg font-semibold">{result.symbolName}</h2>
-                <p className="text-sm text-slate-400">{result.filePath} â€¢ {result.language}</p>
+                <p className="text-sm text-slate-400">{result.filePath} • {result.language}</p>
               </div>
               <div className="rounded-full border border-cyan-500/20 bg-cyan-500/10 px-3 py-1 text-sm text-cyan-300">
-                {result.score?.toFixed(2) ?? 'â€”'}
+                {result.similarityScore?.toFixed(2) ?? 'â€”'}
               </div>
             </div>
             <pre className="mt-4 overflow-x-auto rounded-xl bg-slate-950 p-4 text-sm text-slate-300">
@@ -80,4 +80,6 @@ export default function SearchPage() {
     </div>
   );
 }
+
+
 
