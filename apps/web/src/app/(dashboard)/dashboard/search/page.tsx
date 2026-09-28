@@ -1,9 +1,17 @@
 ﻿'use client';
 
-import { useMemo, useState } from 'react';
+import { Suspense, useMemo, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 
 export default function SearchPage() {
+  return (
+    <Suspense fallback={<div className="rounded-2xl border border-slate-800 bg-slate-900/70 p-6 text-slate-400">Loading…</div>}>
+      <SearchPageContent />
+    </Suspense>
+  );
+}
+
+function SearchPageContent() {
   const searchParams = useSearchParams();
   const [query, setQuery] = useState(searchParams.get('q') || '');
   const [results, setResults] = useState<any[]>([]);
@@ -13,8 +21,21 @@ export default function SearchPage() {
     if (!query.trim()) return;
     setLoading(true);
     try {
+      const orgResponse = await fetch('/api/me/organization');
+      if (!orgResponse.ok) {
+        setResults([]);
+        return;
+      }
+      const organization = await orgResponse.json();
+      const organizationId = organization?.id;
+
+      if (!organizationId) {
+        setResults([]);
+        return;
+      }
+
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3333'}/api/search?q=${encodeURIComponent(query)}&organizationId=00e479cc-ed6b-48ea-afc4-e22de9a8a0d3`,
+        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3333'}/api/search?q=${encodeURIComponent(query)}&organizationId=${encodeURIComponent(organizationId)}`,
       );
       const data = await response.json();
       setResults(Array.isArray(data.results) ? data.results : []);
@@ -46,12 +67,12 @@ export default function SearchPage() {
             className="rounded-xl bg-cyan-500 px-4 py-2 font-medium text-slate-950"
             disabled={loading}
           >
-            {loading ? 'Searchingâ€¦' : 'Search'}
+            {loading ? 'Searching…' : 'Search'}
           </button>
         </div>
       </div>
 
-      {loading ? <div className="rounded-2xl border border-slate-800 bg-slate-900/70 p-6 text-slate-400">Loadingâ€¦</div> : null}
+      {loading ? <div className="rounded-2xl border border-slate-800 bg-slate-900/70 p-6 text-slate-400">Loading…</div> : null}
 
       {!loading && results.length === 0 ? (
         <div className="rounded-2xl border border-slate-800 bg-slate-900/70 p-6 text-slate-400">
@@ -68,7 +89,7 @@ export default function SearchPage() {
                 <p className="text-sm text-slate-400">{result.filePath} • {result.language}</p>
               </div>
               <div className="rounded-full border border-cyan-500/20 bg-cyan-500/10 px-3 py-1 text-sm text-cyan-300">
-                {result.similarityScore?.toFixed(2) ?? 'â€”'}
+                {result.similarityScore?.toFixed(2) ?? '—'}
               </div>
             </div>
             <pre className="mt-4 overflow-x-auto rounded-xl bg-slate-950 p-4 text-sm text-slate-300">
@@ -80,6 +101,3 @@ export default function SearchPage() {
     </div>
   );
 }
-
-
-

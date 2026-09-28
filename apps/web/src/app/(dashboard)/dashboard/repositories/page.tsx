@@ -1,9 +1,18 @@
 ﻿import Link from 'next/link';
 
+import { getCurrentOrganization } from '../../../../lib/get-current-organization';
+
 async function getRepositories() {
   try {
+    const organization = await getCurrentOrganization();
+    const organizationId = organization?.id;
+
+    if (!organizationId) {
+      return [];
+    }
+
     const base = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3333';
-    const response = await fetch(`${base}/api/repositories?organizationId=00e479cc-ed6b-48ea-afc4-e22de9a8a0d3`, {
+    const response = await fetch(`${base}/api/repositories?organizationId=${encodeURIComponent(organizationId)}`, {
       cache: 'no-store',
     });
 

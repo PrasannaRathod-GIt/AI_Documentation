@@ -5,6 +5,7 @@ import {
   timestamp,
   index,
   foreignKey,
+  bigint,
 } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
 import { organizations } from './organizations';
@@ -21,6 +22,7 @@ export const repositories = pgTable(
     fullName: varchar('full_name', { length: 255 }).notNull(), // e.g., "owner/repo"
     defaultBranch: varchar('default_branch', { length: 255 }).default('main'),
     githubInstallationId: varchar('github_installation_id', { length: 255 }),
+    installationId: bigint('installation_id', { mode: 'bigint' }),
     webhookSecretEncrypted: text('webhook_secret_encrypted'),
     lastSyncedCommitSha: varchar('last_synced_commit_sha', { length: 40 }),
     createdAt: timestamp('created_at', { withTimezone: true })

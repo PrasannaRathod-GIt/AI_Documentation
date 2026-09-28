@@ -1,15 +1,15 @@
 ﻿import Link from 'next/link';
+import { getCurrentOrganization } from '../../../lib/get-current-organization';
 
-async function getRepository(repoSlug: string) {
+async function getRepository(repoSlug: string, organizationId: string) {
   const base = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3333';
-  const url = `${base}/api/repositories?organizationId=00e479cc-ed6b-48ea-afc4-e22de9a8a0d3`;
+  const url = `${base}/api/repositories?organizationId=${encodeURIComponent(organizationId)}`;
 
   try {
     const response = await fetch(url, { cache: 'no-store' });
     if (!response.ok) return null;
     const repos = await response.json();
-    const found = repos.find((r: any) => r.fullName.includes(repoSlug));
-    return found || null;
+    return repos.find((r: any) => r.fullName.includes(repoSlug)) || null;
   } catch {
     return null;
   }
@@ -22,16 +22,29 @@ async function getCodeChunks(repositoryId: string) {
   try {
     const response = await fetch(url, { cache: 'no-store' });
     if (!response.ok) return [];
-    return response.json();
+    return await response.json();
   } catch {
     return [];
   }
 }
 
 export default async function DocsPage({ params }: { params: Promise<{ repo: string }> }) {
-  const { repo: rawRepo } = await params;
-  const repo = decodeURIComponent(rawRepo);
-  const repository = await getRepository(repo);
+  const { repo } = await params;
+  const organization = await getCurrentOrganization();
+
+  if (!organization) {
+    return (
+      <main className="min-h-screen bg-slate-950 p-8 text-slate-100">
+        <div className="mx-auto max-w-5xl">
+          <div className="rounded-2xl border border-dashed border-slate-700 bg-slate-900/70 p-10 text-center text-slate-400">
+            No organization found for your account yet.
+          </div>
+        </div>
+      </main>
+    );
+  }
+
+  const repository = await getRepository(repo, organization.id);
   const codeChunks = repository ? await getCodeChunks(repository.id) : [];
 
   return (
@@ -70,4 +83,3 @@ export default async function DocsPage({ params }: { params: Promise<{ repo: str
     </main>
   );
 }
-

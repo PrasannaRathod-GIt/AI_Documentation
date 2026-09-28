@@ -8,7 +8,7 @@ import {
 } from '@nestjs/common';
 import { Webhook } from 'svix';
 import { eq, sql } from 'drizzle-orm';
-import { db, organizations, users } from '@ai-docs/database';
+import { db, memberships, organizations, users } from '@ai-docs/database';
 
 @Controller('webhooks/clerk')
 export class ClerkWebhookController {
@@ -21,6 +21,7 @@ export class ClerkWebhookController {
     @Headers('svix-timestamp') svixTimestamp: string,
     @Headers('svix-signature') svixSignature: string,
   ): Promise<{ received: true }> {
+    this.logger.log('🔥 CLERK WEBHOOK HIT');
     if (!svixId || !svixTimestamp || !svixSignature) {
       throw new BadRequestException('Missing Svix headers');
     }
@@ -84,6 +85,54 @@ export class ClerkWebhookController {
         }
 
         this.logger.log(`✅ Organization created: ${name}`);
+      } else if (eventType === 'organizationMembership.created') {
+        const organizationId = data?.organization?.id as string | undefined;
+        const authProviderUserId = data?.public_user_data?.user_id as string | undefined;
+        const role = data?.role as string | undefined;
+
+        if (!organizationId || !authProviderUserId || !role) {
+          throw new BadRequestException('Missing Clerk membership payload data');
+        }
+
+        const existingUser = await db.query.users.findFirst({
+          where: eq(users.authProviderId, authProviderUserId),
+        });
+
+        const existingOrganizationRows = await db
+          .select()
+          .from(organizations)
+          .where(sql`clerk_org_id = ${organizationId}`)
+          .limit(1);
+
+        if (existingUser && existingOrganizationRows.length > 0) {
+          const existingOrganization = existingOrganizationRows[0];
+
+          const existingMembershipRows = await db
+            .select()
+            .from(memberships)
+            .where(
+              sql`user_id = ${existingUser.id} AND organization_id = ${existingOrganization.id}`
+            )
+            .limit(1);
+
+          if (existingMembershipRows.length === 0) {
+            const membershipRole =
+              role === 'org:admin' ? 'admin' : role === 'org:owner' ? 'owner' : 'member';
+
+            await db.execute(
+              sql`INSERT INTO memberships (user_id, organization_id, role) VALUES (${existingUser.id}, ${existingOrganization.id}, ${membershipRole})`
+            );
+
+            this.logger.log(
+              `✅ Membership created: ${existingUser.email || existingUser.id} → ${existingOrganization.name || existingOrganization.clerkOrgId}`
+            );
+          }
+        } else {
+          this.logger.warn(
+            `Membership event received before user/org exists: user=${authProviderUserId} org=${organizationId}`
+          );
+          return { received: true };
+        }
       } else {
         this.logger.log(`Received Clerk event ${eventType} and ignored it`);
       }
